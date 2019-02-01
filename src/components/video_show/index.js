@@ -2,7 +2,7 @@
  * @Author: Rybin 
  * @Date: 2019-01-10 15:32:30 
  * @Last Modified by: Rybin
- * @Last Modified time: 2019-01-14 09:18:54
+ * @Last Modified time: 2019-02-01 16:53:28
  * @description: {} 
  */
 // 正则表达替换2位小数： (0\.\d{2}$)  => "$1"
@@ -12,7 +12,6 @@ export default {
   name: 'VideoShow',
   data () {
     return {
-      // exArray: [],
       // 视频元素
       video: null, 
       // 用于控制视频流，目前没用到
@@ -33,37 +32,24 @@ export default {
     }
   },
   created() {
+    // 各种浏览器中 HTML5 获取摄像头和视频控制接口
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     // URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
   },
   mounted() {
+
     this.video = document.querySelector('video');
     this.womanAvatar = document.getElementsByClassName('woman-avatar');
     this.manAvatar = document.getElementsByClassName('man-avatar');
+
     const that = this;
+
     // 延迟1s自动启动摄像头
     setTimeout(() => {
       this.getMedia();
     }, 1000);
 
-    // const key_down = this.throttle((e) => {
-    //   let keyNum = window.event ? e.keyCode : e.which;
-    //   if (keyNum === 32) {
-    //     console.log('key down');
-    //     // 如果还在等待请求中，则无操作
-    //     if (that.isRequesting) return;       
-    //     if (that.showResult) {
-    //       // 如果是显示结果状态，则返回视频页面
-    //       that.openVideo();
-    //     } else {
-    //       // 如果不是显示结果状态，则截取画面上传
-    //       that.captureImg();
-    //       // that.showResult = true;
-    //     }
-    //   }
-    // }, 1000);
-
-    // 节流防抖
+    // 截图时，对按键操作进行节流防抖
     function throttle(fn, interval) {
       // last为上一次触发回调的时间
       let last = 0;
@@ -72,17 +58,15 @@ export default {
       return (...args) => {
         // 保留调用时的this上下文
         let context = this;
-        // 保留调用时传入的参数
-        // let args = arguments
         // 记录本次触发回调的时间
         let now = Date.now();
-        count++;
-        console.log('count 1: ', count);
+        // count++;
+        // console.log('count 1: ', count);
         // 判断上次触发的时间和本次触发的时间差是否小于时间间隔的阈值
         if (now - last >= interval) {
           // 如果时间间隔大于我们设定的时间间隔阈值，则执行回调
           last = now;
-          console.log('count 2: ', count);
+          // console.log('count 2: ', count);
           fn.apply(context, args);
         }
       }
@@ -107,25 +91,8 @@ export default {
       }
     }, 1000));
 
-    // NOTE: 没加防抖的
-    // document.onkeydown = (e) => {
-    //   let keyNum = window.event ? e.keyCode : e.which;
-    //   if (keyNum === 32) {
-    //     console.log('key down');
-    //     // 如果还在等待请求中，则无操作
-    //     if (that.isRequesting) return;
-       
-    //     if (that.showResult) {
-    //       // 如果是显示结果状态，则返回视频页面
-    //       that.openVideo();
-    //     } else {
-    //       // 如果不是显示结果状态，则截取画面上传
-    //       that.captureImg();
-    //       // that.showResult = true;
-    //     }
-    //   }
-    // }
   },
+
   computed: {
     similayForm: function() {
       let resNum = parseFloat(this.similarity) + 0.1;
@@ -134,6 +101,7 @@ export default {
       return resNum.toFixed(0);
     }
   },
+
   methods: {  
 
     // 打开摄像头
@@ -143,12 +111,13 @@ export default {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({
           video: {
+            // 摄像头分辨率大小设置，ideal为优先使用的，如果获取的摄像头没有这么高的分辨率，就在min ~ max的范围内自动选取
             width: { min: 640, ideal: 1920, max: 1920 },
             height: { min: 480, ideal: 1080, max: 1080 }
           },
+          // 本项目不需要打开音频
           audio: false
-        }).then(function (stream) {
-          // console.log('new %o:', stream);         
+        }).then(function (stream) {     
 
           that.MediaStreamTrack = typeof stream.stop === 'function' ? stream : stream.getTracks()[1];
 
@@ -186,6 +155,7 @@ export default {
       //   this.captureImg();
       // }, 100);      
     },
+
     // 暂停播放，但是还没有找到关闭摄像头的代码
     closeVideo: function() {
       console.log('closeVideo');
@@ -221,12 +191,8 @@ export default {
       this.manAvatar[0].style.backgroundSize = `${scaleLength2}px auto`;
       this.manAvatar[0].style.backgroundImage = `url(${url})`;
       this.manAvatar[0].style.backgroundPosition = `-${offset_x2}px -${offset_y2}px`;
-      // this.womanAvatar[0].style.backgroundImage = `url(${url})`;
-      // this.womanAvatar[0].style.backgroundPosition = `-${data.x1}px -${data.y1}px`;
-      // this.manAvatar[0].style.backgroundImage = `url(${url})`;
-      // this.manAvatar[0].style.backgroundPosition = `-${data.x2}px -${data.y2}px`;
 
-      // TODO: 待测试
+      // NOTE: 清空缓存的截图保存在本地的文件链接
       setTimeout(() => {
         (window.URL || window.webkitURL).revokeObjectURL(url);
         console.log(url);
@@ -240,6 +206,7 @@ export default {
     // 截图并发送到服务后台
     captureImg: function () {
       console.log('captureImg');
+      // 用画布canvas进行截图
       let captureCanvas = document.createElement('canvas');
       captureCanvas.width = this.video.videoWidth;
       captureCanvas.height = this.video.videoHeight;
@@ -249,7 +216,7 @@ export default {
       // console.log(view.clientWidth, view.clientHeight);
 
       const that = this;
-      // 转化为二进制图片
+      // 将画布内容转化为二进制图片
       captureCanvas.toBlob((blob) => {
 
         // 通过FormData对象可以组装一组用 XMLHttpRequest发送请求的键/值对。
@@ -277,13 +244,9 @@ export default {
                 that.showResult = true;                
                 return that.success(resJson.data, url);
               } else {
-                // NOTE: 现在不做任何操作 这里返回的结果不符合要求重新截图。
-                // that.captureImg();
                 return that.fail(resJson.data);
               }              
             } else {
-              // NOTE: 现在不做任何操作 失败，重新截图:
-              // that.captureImg();
               return that.fail(xhr.status);
             }           
           } else {
@@ -291,11 +254,13 @@ export default {
             // console.log('xhr.readyState: ' + xhr.readyState);
           }
         }
+
         if (process.env.NODE_ENV === 'development') {
           xhr.open('POST', '/face/compare', true);
         } else {   
           xhr.open('POST', 'http://127.0.0.1:5000/face/compare', true);
         }
+
         xhr.send(form);
       }, 'image/jpeg');
     }
